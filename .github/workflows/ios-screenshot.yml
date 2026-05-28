@@ -21,6 +21,12 @@ jobs:
       - name: Xcode バージョン確認
         run: xcodebuild -version
 
+      - name: xcodegen をインストール
+        run: brew install xcodegen
+
+      - name: Xcode プロジェクトを生成
+        run: xcodegen generate --spec project.yml
+
       - name: 利用可能なシミュレータを確認
         run: xcrun simctl list devices available | grep iPhone
 
@@ -32,17 +38,18 @@ jobs:
           xcrun simctl boot "$SIMULATOR_ID"
           sleep 8
 
-      - name: iOSシミュレータ向けビルド（特定シミュレータ指定）
+      - name: iOSシミュレータ向けビルド
         run: |
           xcodebuild \
+            -project HelloWorld.xcodeproj \
             -scheme HelloWorld \
             -destination "id=$SIMULATOR_ID" \
             -derivedDataPath ./build \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: ビルド結果ディレクトリを確認
-        run: find ./build/Build/Products -name "*.app" -type d 2>/dev/null || find ./build -name "*.app" -type d 2>/dev/null || echo "appが見つかりません"
+      - name: ビルド結果を確認
+        run: find ./build/Build/Products -name "*.app" -type d 2>/dev/null || echo ".app が見つかりません"
 
       - name: アプリをインストール
         run: |
