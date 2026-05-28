@@ -1,0 +1,69 @@
+name: iOS Screenshot
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  screenshot:
+    name: iOS Simulator Screenshot
+    runs-on: macos-latest
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Xcode バージョン確認
+        run: xcodebuild -version
+
+      - name: 利用可能なシミュレータを確認
+        run: xcrun simctl list devices available | grep iPhone
+
+      - name: iOSシミュレータ向けビルド
+        run: |
+          xcodebuild \
+            -scheme HelloWorld \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: シミュレータを起動
+        run: |
+          SIMULATOR_ID=$(xcrun simctl list devices available | grep -E "iPhone" | grep -v "Plus\|Pro\|Max\|Mini" | head -1 | grep -oE '[0-9A-F-]{36}')
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> $GITHUB_ENV
+          echo "使用するシミュレータID: $SIMULATOR_ID"
+          xcrun simctl boot "$SIMULATOR_ID"
+          sleep 8
+
+      - name: アプリをインストール
+        run: |
+          APP_PATH=$(find ./build -name "*.app" -not -path "*/PlugIns/*" | head -1)
+          echo "アプリパス: $APP_PATH"
+          xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
+
+      - name: アプリを起動
+        run: |
+          APP_PATH=$(find ./build -name "*.app" -not -path "*/PlugIns/*" | head -1)
+          BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
+          xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID"
+          sleep 5
+
+      - name: スクリーンショットを撮影
+        run: |
+          xcrun simctl io "$SIMULATOR_ID" screenshot screenshot.png
+          echo "スクリーンショット撮影完了"
+
+      - name: スクリーンショットをアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshot
+          path: screenshot.png
+          retention-days: 30
