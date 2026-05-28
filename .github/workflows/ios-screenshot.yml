@@ -49,20 +49,26 @@ jobs:
             build
 
       - name: ビルド結果を確認
-        run: find ./build/Build/Products -name "*.app" -type d 2>/dev/null || echo ".app が見つかりません"
+        run: |
+          echo "=== .app ファイルを全検索 ==="
+          find ./build -name "*.app" -type d 2>/dev/null | grep -v PlugIns || echo ".app が見つかりません"
+          echo "=== build ディレクトリ構造 ==="
+          ls -la ./build/Build/Products/ 2>/dev/null || echo "Products ディレクトリなし"
 
       - name: アプリをインストール
         run: |
-          APP_PATH=$(find ./build/Build/Products -name "*.app" -type d -not -path "*/PlugIns/*" | head -1)
+          APP_PATH=$(find ./build -name "HelloWorld.app" -type d | grep -v PlugIns | head -1)
+          if [ -z "$APP_PATH" ]; then
+            APP_PATH=$(find . -name "*.app" -type d | grep -v PlugIns | grep -v ".git" | grep -v xcodegen | head -1)
+          fi
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
           echo "アプリパス: $APP_PATH"
           xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
 
       - name: アプリを起動
         run: |
-          APP_PATH=$(find ./build/Build/Products -name "*.app" -type d -not -path "*/PlugIns/*" | head -1)
           BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
           echo "Bundle ID: $BUNDLE_ID"
-          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
           xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID"
           sleep 5
 
