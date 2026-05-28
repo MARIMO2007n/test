@@ -1,0 +1,24 @@
+workflows:
+  ios-simulator:
+    name: iOS Simulator Build
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    scripts:
+      - name: Xcode バージョン確認
+        script: xcodebuild -version
+
+      - name: iOS シミュレータ向けビルド
+        script: |
+          xcodebuild \
+            -scheme HelloWorld \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+    artifacts:
+      - build/Build/**/*.app
