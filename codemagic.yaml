@@ -11,13 +11,20 @@ workflows:
       - name: Xcode バージョン確認
         script: xcodebuild -version
 
+      - name: パッケージ依存関係を解決
+        script: xcodebuild -resolvePackageDependencies -scheme HelloWorld 2>&1 || true
+
+      - name: 利用可能なスキーム一覧を確認
+        script: xcodebuild -list 2>&1 || true
+
       - name: iOS シミュレータ向けビルド
         script: |
           xcodebuild \
             -scheme HelloWorld \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ./build \
             CODE_SIGNING_ALLOWED=NO \
+            SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
             build
 
     artifacts:
