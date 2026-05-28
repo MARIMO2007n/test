@@ -1,0 +1,28 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build HelloWorld iOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Xcode バージョン確認
+        run: xcodebuild -version
+
+      - name: Swift Package をビルド（iOSシミュレータ向け）
+        run: |
+          xcodebuild \
+            -scheme HelloWorld \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
