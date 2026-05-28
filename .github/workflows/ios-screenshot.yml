@@ -24,15 +24,6 @@ jobs:
       - name: 利用可能なシミュレータを確認
         run: xcrun simctl list devices available | grep iPhone
 
-      - name: iOSシミュレータ向けビルド
-        run: |
-          xcodebuild \
-            -scheme HelloWorld \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath ./build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-
       - name: シミュレータを起動
         run: |
           SIMULATOR_ID=$(xcrun simctl list devices available | grep -E "iPhone" | grep -v "Plus\|Pro\|Max\|Mini" | head -1 | grep -oE '[0-9A-F-]{36}')
@@ -41,15 +32,27 @@ jobs:
           xcrun simctl boot "$SIMULATOR_ID"
           sleep 8
 
+      - name: iOSシミュレータ向けビルド（特定シミュレータ指定）
+        run: |
+          xcodebuild \
+            -scheme HelloWorld \
+            -destination "id=$SIMULATOR_ID" \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: ビルド結果ディレクトリを確認
+        run: find ./build/Build/Products -name "*.app" -type d 2>/dev/null || find ./build -name "*.app" -type d 2>/dev/null || echo "appが見つかりません"
+
       - name: アプリをインストール
         run: |
-          APP_PATH=$(find ./build -name "*.app" -not -path "*/PlugIns/*" | head -1)
+          APP_PATH=$(find ./build/Build/Products -name "*.app" -type d -not -path "*/PlugIns/*" | head -1)
           echo "アプリパス: $APP_PATH"
           xcrun simctl install "$SIMULATOR_ID" "$APP_PATH"
 
       - name: アプリを起動
         run: |
-          APP_PATH=$(find ./build -name "*.app" -not -path "*/PlugIns/*" | head -1)
+          APP_PATH=$(find ./build/Build/Products -name "*.app" -type d -not -path "*/PlugIns/*" | head -1)
           BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
           echo "Bundle ID: $BUNDLE_ID"
           echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
