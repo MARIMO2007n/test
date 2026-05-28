@@ -67,7 +67,7 @@ jobs:
 
       - name: アプリを起動
         run: |
-          BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_PATH/Info.plist" 2>/dev/null || echo "com.example.HelloWorld")
           echo "Bundle ID: $BUNDLE_ID"
           xcrun simctl launch "$SIMULATOR_ID" "$BUNDLE_ID"
           sleep 5
